@@ -10,3 +10,4 @@ def binary(data : list, probability):
             perturbed.append(copy.deepcopy(i))
 
     return perturbed
+
