@@ -2,16 +2,41 @@
 Fitness (Objective) function utilities
 """
 
+from audioop import bias
 import math
-from typing import List
 
 class FitnessFunction:
     """
     Wrapper object used for storing statistics
     """
-    def __init__(self, function):
+    def __init__(self, function,
+        bias = None,
+        coefficients = None,
+        mapping = lambda x : x,
+        **kwargs):
+
+        self.last_fitness = None
+        self.bias = bias
+        self.coefficients = coefficients
         self.calls_made = 0
+        self.mapping = mapping
         self.function = function
+        
+    def clear(self):
+        self.last_fitness = None
+        self.calls_made = 0
+    
+    def set_bias(self, bias):
+        """
+        Sets bias function argument
+        """
+        self.bias = bias
+
+    def set_coefficients(self, coefficients):
+        """
+        Sets coefficients function argument
+        """
+        self.coefficients = coefficients
 
     def get_number_of_calls(self):
         """
@@ -19,15 +44,24 @@ class FitnessFunction:
         """
         return self.calls_made
 
-    def evaluate(self, data : list = None
-        ,bias = None
-        ,coefficients = None):
-        """
-        Calls the wrapped function
-        """
+    def __call__(self, data : list):
         self.calls_made += 1
-        return self.function(data = data, bias = bias, coefficients = coefficients)
+        self.last_fitness = self.function(data = self.mapping(data), bias = self.bias, coefficients = self.coefficients)
+        return self.last_fitness
+    
+    def __repr__(self):
+        return "{}, mapping: {}, calls_made: {}, bias: {}, coefficients: {}".format(self.function.__name__,
+            self.mapping.__name__, self.calls_made, self.bias, self.coefficients)
 
+def tsp_route_distance(data : list, **kwargs):
+    """
+    Returns distance of given city route
+    """
+    route_distance = 0
+    for i in range(len(data)):
+        j = (i + 1) % len(data)  
+        route_distance += data[i].distance(data[j])
+    return route_distance
 
 def one_max(data : list = 0, **kwargs):
     """
@@ -137,8 +171,6 @@ def schwefel(data : "list[int | float]", **kwargs):
 
     return -result
 
-
-
 def test_schwefel():
     """
     Test schwefel function
@@ -152,7 +184,6 @@ def test_schwefel():
     assert schwefel([0.1,1.2,2.3,3.4,4.5,5.6,6.7,7.8,8.9,9.1]) == -23.145593064008178
     assert schwefel([5,5,-5]) == -3.93374565773607
     assert schwefel([5]) == -3.93374565773607
-
 
 def test_griewank():
     """
@@ -213,7 +244,6 @@ def test_linear():
     assert linear([0], 1, [1]) == 1
     assert (linear([-0.1,-1.2,-2.3,-3.4,-4.5,-5.6,-6.7,-7.8,-8.9,-9.1], 1, [1,1,1,1,1,1,1,1,1,1])
         == -48.6)
-
 
 def test_rosenbrock():
     """
